@@ -1,7 +1,31 @@
 import model from "./model.js";
+import courseModel from "../Courses/model.js";
+import enrollmentModel from "../Enrollments/model.js";
 export const createUser = (user) => {
   delete user._id
   return model.create(user);
+}
+export async function findCoursesForUser(userId) {
+  
+  const user = await model.findById(userId);
+  if (user.role === "FACULTY") {
+    return courseModel.find();
+  }
+
+  const enrollments = await enrollmentModel.find({ user: userId });
+  const coursesPromises = enrollments.map(enrollment => 
+    courseModel.findById(enrollment.course)
+  );
+  const courses = await Promise.all(coursesPromises);
+  
+  return courses.map(course => ({
+    ...course.toObject(),
+    enrolled: true
+  }));
+}
+
+export function findCoursesForEnrolledUser(userId) {
+  return model.find({ _id: { $in: enrollments } });
 }
 
 export const findAllUsers = () => model.find();
